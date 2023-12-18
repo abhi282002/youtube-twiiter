@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import connectDB from "./db/db.js";
 import { app } from "./app.js";
 
-dotenv.config({ path: "./env" });
+dotenv.config({ path: "./.env" });
 connectDB()
   .then(() => {
     app.listen(process.env.PORT || 8000, () => {
@@ -15,7 +15,7 @@ connectDB()
   });
 
 // import express from "express";
-// //use if to immediately execute
+// //use ifi to immediately execute
 // const app = express();
 // (async () => {
 //   try {
