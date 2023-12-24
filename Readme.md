@@ -11,4 +11,7 @@
 
 # access token short lived, refresh token are longed lived
 
-refresh token store in db when access token timeup send a 401request if 401 request come then hit a specific endPoint and refresh the access token ---> also send refresh token with the request so that we can match it then start a new session
+refresh token store in db when access token timeup send a 401 --> request if 401 request come then hit a specific endPoint and refresh the access token ---> also send refresh token with the request so that we can match it then start a new session
+
+
+
