@@ -429,6 +429,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 });
 
 export {
+  getWatchHistory,
   getUserChannelProfile,
   changeCurrentPassword,
   registerUser,
