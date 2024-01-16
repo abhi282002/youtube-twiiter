@@ -3,6 +3,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Video } from "../models/video.model.js";
+import mongoose from "mongoose";
+import { User } from "../models/user.model.js";
 
 //Publish Video
 const createVideo = asyncHandler(async (req, res) => {
@@ -35,10 +37,119 @@ const createVideo = asyncHandler(async (req, res) => {
     description,
     duration: videoFileUrl.duration,
     owner: req.user?._id,
+    isPublished: true,
   });
+  const videoId = await Video.findById(video?._id);
+  if (!videoId) {
+    throw new ApiError(500, "Video upload failed please try again");
+  }
   res
     .status(200)
     .json(new ApiResponse(200, video, "Video Published Successfully"));
 });
 
-export { createVideo };
+//get video by id
+
+const getVideoById = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  console.log(videoId);
+  if (!videoId) {
+    throw new ApiError(403, "Invalid VideoId");
+  }
+  const VideoIndex = await Video.collection.createIndex({
+    "videoFile.public_id": 1,
+  });
+  if (!VideoIndex) {
+    throw new ApiError(500, "Server Error");
+  }
+  const video = await Video.aggregate([
+    {
+      $match: {
+        "videoFile.public_id": videoId,
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "Owner",
+        pipeline: [
+          {
+            $lookup: {
+              from: "subscriptions",
+              localField: "_id",
+              foreignField: "channel",
+              as: "Subscriber",
+            },
+          },
+          {
+            $addFields: {
+              subscriberCount: {
+                $size: "$Subscriber",
+              },
+              isSubscribed: {
+                $cond: {
+                  if: {
+                    $in: [req.user?._id, "$Subscriber.subscriber"],
+                  },
+                  then: true,
+                  else: false,
+                },
+              },
+            },
+          },
+          {
+            $project: {
+              username: 1,
+              "avatar.url": 1,
+              subscriberCount: 1,
+              isSubscribed: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        "videoFile.url": 1,
+        "thumbnail.url": 1,
+        title: 1,
+        description: 1,
+        duration: 1,
+        views: 1,
+        isPublished: 1,
+        duration: 1,
+        comments: 1,
+        Owner: 1,
+        likesCount: 1,
+        isLiked: 1,
+        "avatar.url": 1,
+        subscriberCount: 1,
+        isSubscribed: 1,
+      },
+    },
+  ]);
+
+  if (!video) {
+    throw new ApiError(500, "Failed to fetch video");
+  }
+  await Video.findOneAndUpdate(
+    { "videoFile.public_id": videoId },
+    {
+      $inc: {
+        views: 1,
+      },
+    },
+    { new: true } // This option returns the modified document
+  );
+  await User.findByIdAndUpdate(req.user?._id, {
+    $addToSet: {
+      watchHistory: video._id,
+    },
+  });
+
+  res.status(200).json(new ApiResponse(200, video, "Video Id get Sucessfully"));
+});
+
+export { createVideo, getVideoById };
