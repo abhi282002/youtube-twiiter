@@ -111,4 +111,32 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     );
 });
 
-export { toggleSubscription, getUserChannelSubscribers };
+//mene kitno ko subscribed kiya
+const getSubscribedChannels = asyncHandler(async (req, res) => {
+  const { subscriberId } = req.params;
+  const subscribedChannels = await Subscription.aggregate([
+    {
+      $match: {
+        subscriber: new mongoose.Types.ObjectId(subscriberId),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "channel",
+        foreignField: "_id",
+        as: "subscribedUser",
+      },
+    },
+  ]);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { data: subscribedChannels },
+        "Subscriber fetched successfully"
+      )
+    );
+});
+export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels };
