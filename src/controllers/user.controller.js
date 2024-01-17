@@ -402,15 +402,11 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                     avatar: 1,
                   },
                 },
-                {
-                  $addFields: {
-                    owner: {
-                      $first: "$owner",
-                    },
-                  },
-                },
               ],
             },
+          },
+          {
+            $unwind: "$owner",
           },
         ],
       },

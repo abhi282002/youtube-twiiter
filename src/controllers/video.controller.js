@@ -56,12 +56,7 @@ const getVideoById = asyncHandler(async (req, res) => {
   if (!videoId) {
     throw new ApiError(403, "Invalid VideoId");
   }
-  const VideoIndex = await Video.collection.createIndex({
-    "videoFile.public_id": 1,
-  });
-  if (!VideoIndex) {
-    throw new ApiError(500, "Server Error");
-  }
+
   const video = await Video.aggregate([
     {
       $match: {
@@ -73,7 +68,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         from: "users",
         localField: "owner",
         foreignField: "_id",
-        as: "Owner",
+        as: "owner",
         pipeline: [
           {
             $lookup: {
@@ -121,7 +116,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         isPublished: 1,
         duration: 1,
         comments: 1,
-        Owner: 1,
+        owner: 1,
         likesCount: 1,
         isLiked: 1,
         "avatar.url": 1,
@@ -134,22 +129,36 @@ const getVideoById = asyncHandler(async (req, res) => {
   if (!video) {
     throw new ApiError(500, "Failed to fetch video");
   }
-  await Video.findOneAndUpdate(
-    { "videoFile.public_id": videoId },
-    {
-      $inc: {
-        views: 1,
-      },
-    },
-    { new: true } // This option returns the modified document
-  );
-  await User.findByIdAndUpdate(req.user?._id, {
-    $addToSet: {
-      watchHistory: video._id,
-    },
-  });
 
-  res.status(200).json(new ApiResponse(200, video, "Video Id get Sucessfully"));
+  try {
+    const updatedVideo = await Video.findByIdAndUpdate(
+      new mongoose.Types.ObjectId(video[0]._id),
+      {
+        $inc: {
+          views: 1,
+        },
+      },
+      { new: true } // This option returns the modified document
+    );
+    video[0].views = updatedVideo.views;
+    console.log(updatedVideo);
+    await User.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $addToSet: {
+          watchHistory: video[0]._id,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+  } catch (error) {
+    console.error("Error while processing:", error);
+    throw new ApiError(500, "Error While Processing");
+  }
+  console.log(video);
+  res.status(200).json(new ApiResponse(200, video[0], "Video get Sucessfully"));
 });
 
 export { createVideo, getVideoById };

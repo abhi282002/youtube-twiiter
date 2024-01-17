@@ -102,13 +102,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   ]);
   return res
     .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { data: subscribers },
-        "subscribers fetch successfully"
-      )
-    );
+    .json(new ApiResponse(200, subscribers, "subscribers fetch successfully"));
 });
 
 //mene kitno ko subscribed kiya
@@ -134,7 +128,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { data: subscribedChannels },
+        subscribedChannels,
         "Subscriber fetched successfully"
       )
     );
