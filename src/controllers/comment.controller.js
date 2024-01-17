@@ -114,7 +114,7 @@ const deleteVideoComment = asyncHandler(async (req, res) => {
   if (comment?.owner.toString() != req.user?._id.toString()) {
     throw new ApiError(403, "You don't have permission to update this message");
   }
-  await Comment.findOneAndDelete(commentId);
+  await Comment.findByIdAndDelete(commentId);
   res
     .status(200)
     .json(new ApiResponse(200, {}, "Comment Deleted Successfully"));
