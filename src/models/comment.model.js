@@ -13,7 +13,7 @@ const commentSchema = new Schema(
     },
     owner: {
       type: Schema.Types.ObjectId,
-      ref: "Video",
+      ref: "User",
     },
   },
   { timestamps: true }
@@ -21,4 +21,4 @@ const commentSchema = new Schema(
 
 commentSchema.plugin(mongooseAggregatePaginate);
 
-export const Comment = mongoose.Schema("Comment", commentSchema);
+export const Comment = mongoose.model("Comment", commentSchema);
