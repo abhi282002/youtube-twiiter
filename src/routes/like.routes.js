@@ -5,3 +5,5 @@ import { getSubscribedChannels } from "../controllers/subscription.controller.js
 
 //verify jwt
 router.use(verifyJWT);
+
+router.route();

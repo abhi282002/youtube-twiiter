@@ -90,7 +90,9 @@ const updateVideoComment = asyncHandler(async (req, res) => {
   await Comment.findByIdAndUpdate(
     commentId,
     {
-      content: updatedComment,
+      $set: {
+        content: updatedComment,
+      },
     },
     {
       new: true,
