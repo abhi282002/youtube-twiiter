@@ -35,7 +35,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     );
 });
 
-//subscriber list of a channel
+//get User Channel Subscribers
 
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   let { channelId } = req.params;

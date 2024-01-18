@@ -6,6 +6,34 @@ import { Video } from "../models/video.model.js";
 import mongoose, { isValidObjectId } from "mongoose";
 import { User } from "../models/user.model.js";
 
+//toggle published video
+const toggleIsPublished = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(403, "VideoId is not valid");
+  }
+  const video = await Video.findById(videoId);
+  if (video.owner.toString() != req.user?._id.toString()) {
+    throw new ApiError(403, "You don't have permission to update this video");
+  }
+
+  await Video.findByIdAndUpdate(
+    video._id,
+    {
+      $set: {
+        isPublished: !video?.isPublished,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "toggle Published Successfully"));
+});
+
 //Publish Video
 const createVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
@@ -47,8 +75,6 @@ const createVideo = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, video, "Video Published Successfully"));
 });
-
-//get video by id
 
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
@@ -169,4 +195,4 @@ const getVideoById = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, video[0], "Video get Sucessfully"));
 });
 
-export { createVideo, getVideoById };
+export { toggleIsPublished, createVideo, getVideoById };

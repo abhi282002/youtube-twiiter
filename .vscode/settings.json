@@ -1,3 +1,29 @@
 {
-     "editor.cursorSmoothCaretAnimation": "on"
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.fontLigatures": true,
+  "editor.formatOnPaste": true,
+  "editor.minimap.enabled": false,
+  "editor.inlayHints.fontFamily": "Fira Code",
+  "vim.normalModeKeyBindingsNonRecursive": [
+    {
+      "before": ["<C-n>"],
+      "after": ["<Esc>"],
+      "commands": ["extension.vim_escape"]
+    },
+    {
+      "before": ["<leader>", "c"],
+      "commands": ["editor.action.clipboardCopyAction"],
+      "modes": ["n"]
+    },
+    {
+      "before": ["<leader>", "p"],
+      "commands": ["editor.action.clipboardPasteAction"],
+      "modes": ["n"]
+    },
+    {
+      "before": ["<leader>", "v"],
+      "after": ["<Esc>", "v"],
+      "commands": ["extension.vim_escape"]
+    }
+  ]
 }

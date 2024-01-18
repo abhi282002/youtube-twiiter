@@ -5,6 +5,7 @@ import { Comment } from "../models/comment.model.js";
 import { Video } from "../models/video.model.js";
 import mongoose, { isValidObjectId } from "mongoose";
 
+//get Video By Comment
 const getVideoComment = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const page = parseInt(req.query.page, 10) || 1;
