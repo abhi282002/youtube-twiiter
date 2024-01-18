@@ -58,7 +58,28 @@ const updateTweet = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, updatedTweet, "Tweet Updated Successfully"));
 });
+const deleteTweet = asyncHandler(async (req, res) => {
+  const { tweetId } = req.params;
+  if (!isValidObjectId(tweetId)) {
+    throw new ApiError(200, "TweetId is not Valid");
+  }
+  const tweet = await Tweet.findById(tweetId);
+  if (!tweet) {
+    throw new ApiError(403, "Tweet Not found");
+  }
+  if (tweet.owner.toString() != req.user?._id.toString()) {
+    throw new ApiError(400, "You don't fave permission to updated this Tweet");
+  }
+  await Tweet.findByIdAndDelete(tweetId);
 
+  if (!tweet) {
+    throw new ApiError(
+      500,
+      "Something went wrong While deleting tweet Please try again later"
+    );
+  }
+  res.status(200).json(new ApiResponse(200, {}, "Tweet Deleted Successfully"));
+});
 //getUserTweet
 const getUserTweet = asyncHandler(async (req, res) => {
   const { userId } = req.params;
@@ -102,4 +123,4 @@ const getUserTweet = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, tweet, "Tweet Fetched Successfully"));
 });
-export { postTweet, updateTweet, getUserTweet };
+export { postTweet, updateTweet, getUserTweet, deleteTweet };
