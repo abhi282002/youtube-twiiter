@@ -17,7 +17,7 @@ const getVideoComment = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Video not found");
   }
 
-  const pipeline = [
+  const aggregateResult = Comment.aggregate([
     {
       $match: {
         video: new mongoose.Types.ObjectId(video?._id),
@@ -49,22 +49,14 @@ const getVideoComment = asyncHandler(async (req, res) => {
         },
       },
     },
-    {
-      $skip: (page - 1) * limit,
-    },
-    {
-      $limit: limit,
-    },
-  ];
+  ]);
 
-  const aggregateResult = await Comment.aggregate(pipeline);
-  console.log(aggregateResult);
-  const result = await Comment.aggregatePaginate(aggregateResult, {
-    page,
-    limit,
-  });
-  console.log(result, aggregateResult);
-  result.docs = aggregateResult;
+  const options = {
+    page: page,
+    limit: limit,
+  };
+
+  const result = await Comment.aggregatePaginate(aggregateResult, options);
 
   res
     .status(200)
