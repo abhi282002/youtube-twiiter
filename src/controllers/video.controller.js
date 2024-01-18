@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Video } from "../models/video.model.js";
-import mongoose from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { User } from "../models/user.model.js";
 
 //Publish Video
@@ -52,15 +52,15 @@ const createVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  console.log(videoId);
-  if (!videoId) {
+
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(403, "Invalid VideoId");
   }
 
   const video = await Video.aggregate([
     {
       $match: {
-        "videoFile.public_id": videoId,
+        _id: new mongoose.Types.ObjectId(videoId),
       },
     },
     {
@@ -83,6 +83,7 @@ const getVideoById = asyncHandler(async (req, res) => {
               subscriberCount: {
                 $size: "$Subscriber",
               },
+
               isSubscribed: {
                 $cond: {
                   if: {
@@ -103,6 +104,13 @@ const getVideoById = asyncHandler(async (req, res) => {
             },
           },
         ],
+      },
+    },
+    {
+      $addFields: {
+        owner: {
+          $first: "$owner",
+        },
       },
     },
     {

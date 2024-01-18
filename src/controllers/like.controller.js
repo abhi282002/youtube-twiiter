@@ -3,15 +3,15 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Video } from "../models/video.model.js";
 import { Like } from "../models/like.model.js";
-import { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 //like unlike video
 const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
-  if (!videoId) {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(403, "This video id is not valid");
   }
-  const video = await Video.findOne({ "videoFile.public_id": videoId });
+  const video = await Video.findById(videoId);
   const alreadyLike = await Like.findOne({
     video: video._id,
     likedBy: req.user._id,
@@ -83,11 +83,16 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     throw new ApiError(403, "tweetId is not valid");
   }
 
-  const alreadyLike = await Like.findById(tweetId);
+  const alreadyLike = await Like.findOne({
+    tweet: tweetId,
+    likedBy: req.user?._id,
+  });
+
   let like;
   let unlike;
   if (alreadyLike) {
-    unlike = await Like.findByIdAndDelete(tweetId);
+    unlike = await Like.findByIdAndDelete(alreadyLike?._id);
+
     if (!unlike) {
       throw new ApiError(500, "Dislike Unsuccess Please try again");
     }

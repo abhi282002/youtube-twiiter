@@ -9,10 +9,10 @@ const getVideoComment = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
-  if (!videoId) {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(403, "VideoId Invalid");
   }
-  const video = await Video.findOne({ "videoFile.public_id": videoId });
+  const video = await Video.findById(videoId);
   if (!video) {
     throw new ApiError(403, "Video not found");
   }
@@ -125,13 +125,13 @@ const deleteVideoComment = asyncHandler(async (req, res) => {
 const postComment = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { content } = req.body;
-  if (!videoId) {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError(403, "VideoId Invalid");
   }
   if (!content) {
     throw new ApiError(403, "Content is required");
   }
-  const video = await Video.findOne({ "videoFile.public_id": videoId });
+  const video = await Video.findById(videoId);
   if (!video) {
     throw new ApiError(403, "Video not found");
   }

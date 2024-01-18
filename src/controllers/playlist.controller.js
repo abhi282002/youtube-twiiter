@@ -58,13 +58,16 @@ const updatePlaylist = asyncHandler(async (req, res) => {
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
   const { videoId, playlistId } = req.params;
   if (!isValidObjectId(playlistId)) {
-    throw new ApiError(403, "Video Id or PlaylistId is not valid");
+    throw new ApiError(403, "PlaylistId is not valid");
+  }
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(403, "Video Id is not valid");
   }
   const playlist = await Playlist.findById(playlistId);
   if (!playlist) {
     throw new ApiError(403, "Playlist is not found");
   }
-  const video = await Video.findOne({ "videoFile.public_id": videoId });
+  const video = await Video.findById(videoId);
 
   if (!video) {
     throw new ApiError(403, "Video is not found");
@@ -79,7 +82,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     playlistId,
     {
       $addToSet: {
-        videos: video?._id,
+        videos: videoId,
       },
     },
     {
@@ -100,11 +103,14 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
   if (!isValidObjectId(playlistId)) {
     throw new ApiError(403, "Video Id or PlaylistId is not valid");
   }
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(403, "Video Id is not valid");
+  }
   const playlist = await Playlist.findById(playlistId);
   if (!playlist) {
     throw new ApiError(403, "Playlist is not found");
   }
-  const video = await Video.findOne({ "videoFile.public_id": videoId });
+  const video = await Video.findById(videoId);
 
   if (!video) {
     throw new ApiError(403, "Video is not found");
