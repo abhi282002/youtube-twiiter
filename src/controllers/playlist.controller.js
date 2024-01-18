@@ -24,6 +24,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
   }
   res.status(200).json(new ApiResponse(200, playlist, "Playlist created"));
 });
+
 const updatePlaylist = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
   const { playlistId } = req.params;
@@ -218,13 +219,13 @@ const getPlayListById = asyncHandler(async (req, res) => {
     {
       $addFields: {
         totalVideo: {
-          $size: "videos",
+          $size: "$videos",
         },
         totalViews: {
-          $sum: "videos.views",
+          $sum: "$videos.views",
         },
         owner: {
-          $first: "owner",
+          $first: "$owner",
         },
       },
     },
