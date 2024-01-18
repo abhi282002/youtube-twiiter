@@ -182,10 +182,89 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, playlist, "User playlist fetched Successfully"));
 });
 
+//getPlaylist by Id
+const getPlayListById = asyncHandler(async (req, res) => {
+  const { playlistId } = req.params;
+  if (!isValidObjectId(playlistId)) {
+    throw new ApiError("Playlist Id is not valid");
+  }
+  const playlist = await Playlist.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(playlistId),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "videos",
+        foreignField: "_id",
+        as: "videos",
+      },
+    },
+    {
+      $match: {
+        "videos.isPublished": true,
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+      },
+    },
+    {
+      $addFields: {
+        totalVideo: {
+          $size: "videos",
+        },
+        totalViews: {
+          $sum: "videos.views",
+        },
+        owner: {
+          $first: "owner",
+        },
+      },
+    },
+    {
+      $project: {
+        name: 1,
+        description: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        totalVideo: 1,
+        totalViews: 1,
+        videos: {
+          _id: 1,
+          "videoFile.url": 1,
+          "thumbnail.url": 1,
+          title: 1,
+          description: 1,
+          duration: 1,
+          createdAt: 1,
+          views: 1,
+        },
+        owner: {
+          username: 1,
+          fullName: 1,
+          "avatar.url": 1,
+        },
+      },
+    },
+  ]);
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, playlist, "Playlist fetched Successfully"));
+});
+
 export {
   createPlaylist,
   updatePlaylist,
   addVideoToPlaylist,
   getUserPlaylists,
   removeVideoFromPlaylist,
+  getPlayListById,
 };
