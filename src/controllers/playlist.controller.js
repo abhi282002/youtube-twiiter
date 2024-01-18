@@ -117,7 +117,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
   const updatedPlaylist = await Playlist.findByIdAndUpdate(
     playlistId,
     {
-      $addToSet: {
+      $pull: {
         videos: video?._id,
       },
     },
@@ -126,11 +126,14 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     }
   );
   if (!updatedPlaylist) {
-    throw new ApiError(400, "failed to add video to playlist please try again");
+    throw new ApiError(
+      400,
+      "failed to delete video from playlist please try again"
+    );
   }
   res
     .status(200)
-    .json(new ApiResponse(200, updatePlaylist, "Video Added Successfully"));
+    .json(new ApiResponse(200, updatePlaylist, "Video Deleted Successfully"));
 });
 
 //get UserPlaylist
@@ -179,4 +182,10 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, playlist, "User playlist fetched Successfully"));
 });
 
-export { createPlaylist, updatePlaylist, addVideoToPlaylist, getUserPlaylists };
+export {
+  createPlaylist,
+  updatePlaylist,
+  addVideoToPlaylist,
+  getUserPlaylists,
+  removeVideoFromPlaylist,
+};
