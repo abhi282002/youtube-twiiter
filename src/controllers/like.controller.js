@@ -35,7 +35,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         {},
-        `User ${like ? "like" : "Unlike"} video successfully`
+        `${req.user?.fullName} ${like ? "Like" : "Unlike"} Your Video`
       )
     );
 });
@@ -71,9 +71,43 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         {},
-        `User ${like ? "like" : "Unlike"} comment successfully`
+        `${req.user?.fullName} ${like ? "Like" : "Unlike"} Your Comment`
       )
     );
 });
 
-export { toggleVideoLike, toggleCommentLike };
+//like unlike tweet
+const toggleTweetLike = asyncHandler(async (req, res) => {
+  const { tweetId } = req.params;
+  if (!isValidObjectId(tweetId)) {
+    throw new ApiError(403, "tweetId is not valid");
+  }
+
+  const alreadyLike = await Like.findById(tweetId);
+  let like;
+  let unlike;
+  if (alreadyLike) {
+    unlike = await Like.findByIdAndDelete(tweetId);
+    if (!unlike) {
+      throw new ApiError(500, "Dislike Unsuccess Please try again");
+    }
+  } else {
+    like = await Like.create({
+      tweet: tweetId,
+      likedBy: req.user?._id,
+    });
+    if (!like) {
+      throw new ApiError(500, "Like Unsuccess Please try again");
+    }
+  }
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        `${req.user?.fullName} ${like ? "Like" : "Unlike"} Your Tweet`
+      )
+    );
+});
+export { toggleVideoLike, toggleTweetLike, toggleCommentLike };
