@@ -60,5 +60,46 @@ const updateTweet = asyncHandler(async (req, res) => {
 });
 
 //getUserTweet
-
-export { postTweet, updateTweet };
+const getUserTweet = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(403, "UserId is not valid");
+  }
+  const tweet = await Tweet.aggregate([
+    {
+      $match: {
+        owner: new mongoose.Types.ObjectId(userId),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+      },
+    },
+    {
+      $addFields: {
+        owner: {
+          $first: "$owner",
+        },
+      },
+    },
+    {
+      $project: {
+        content: 1,
+        createdAt: 1,
+        owner: {
+          username: 1,
+          fullName: 1,
+          "avatar.url": 1,
+        },
+      },
+    },
+  ]);
+  res
+    .status(200)
+    .json(new ApiResponse(200, tweet, "Tweet Fetched Successfully"));
+});
+export { postTweet, updateTweet, getUserTweet };
