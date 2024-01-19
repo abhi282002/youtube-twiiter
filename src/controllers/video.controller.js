@@ -1,10 +1,11 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Video } from "../models/video.model.js";
 import mongoose, { isValidObjectId } from "mongoose";
 import { User } from "../models/user.model.js";
+import { Playlist } from "../models/playlist.model.js";
 
 //toggle published video
 const toggleIsPublished = asyncHandler(async (req, res) => {
@@ -76,6 +77,41 @@ const createVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video Published Successfully"));
 });
 
+const deleteVideo = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(403, "VideoId is not valid");
+  }
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(403, "Video Id is Not Found");
+  }
+  if (video.owner.toString() != req.user?._id) {
+    throw new ApiError(403, "You don't have permission to delete this video");
+  }
+
+  const playlist = await Playlist.findOne({ videos: video._id });
+  console.log(playlist);
+  if (playlist) {
+    await Playlist.findByIdAndUpdate(
+      playlist._id,
+      {
+        $pull: {
+          videos: video._id,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+  }
+
+  await Video.findByIdAndDelete(video._id);
+  await deleteOnCloudinary(video.thumbnail.public_id);
+  await deleteOnCloudinary(video.videoFile.public_id, "video");
+  res.status(200).json(new ApiResponse(200, {}, "Video Deleted Successfully"));
+});
+
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
@@ -87,6 +123,14 @@ const getVideoById = asyncHandler(async (req, res) => {
     {
       $match: {
         _id: new mongoose.Types.ObjectId(videoId),
+      },
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "video",
+        as: "likes",
       },
     },
     {
@@ -134,8 +178,20 @@ const getVideoById = asyncHandler(async (req, res) => {
     },
     {
       $addFields: {
+        likesCount: {
+          $size: "$likes",
+        },
         owner: {
           $first: "$owner",
+        },
+        isLiked: {
+          $cond: {
+            if: {
+              $in: [req.user?._id, "$likes.likedBy"],
+            },
+            then: true,
+            else: false,
+          },
         },
       },
     },
@@ -195,4 +251,4 @@ const getVideoById = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, video[0], "Video get Sucessfully"));
 });
 
-export { toggleIsPublished, createVideo, getVideoById };
+export { toggleIsPublished, createVideo, getVideoById, deleteVideo };

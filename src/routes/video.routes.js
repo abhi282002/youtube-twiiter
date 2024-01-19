@@ -4,6 +4,7 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 router.use(verifyJWT);
 import {
   createVideo,
+  deleteVideo,
   getVideoById,
   toggleIsPublished,
 } from "../controllers/video.controller.js";
@@ -21,6 +22,6 @@ router.route("/").post(
   ]),
   createVideo
 );
-router.route("/v/:videoId").get(getVideoById);
+router.route("/v/:videoId").get(getVideoById).delete(deleteVideo);
 router.route("/toggle/publish/:videoId").patch(toggleIsPublished);
 export default router;
