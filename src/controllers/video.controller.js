@@ -36,6 +36,7 @@ const toggleIsPublished = asyncHandler(async (req, res) => {
 });
 
 //Publish Video
+
 const createVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
   if (!title && !description) {
@@ -91,7 +92,6 @@ const deleteVideo = asyncHandler(async (req, res) => {
   }
 
   const playlist = await Playlist.findOne({ videos: video._id });
-  console.log(playlist);
   if (playlist) {
     await Playlist.findByIdAndUpdate(
       playlist._id,
@@ -106,10 +106,35 @@ const deleteVideo = asyncHandler(async (req, res) => {
     );
   }
 
-  await Video.findByIdAndDelete(video._id);
+  try {
+    await Video.findByIdAndDelete(video._id);
+  } catch (error) {
+    throw new ApiError(500, error.message);
+  }
+
   await deleteOnCloudinary(video.thumbnail.public_id);
   await deleteOnCloudinary(video.videoFile.public_id, "video");
   res.status(200).json(new ApiResponse(200, {}, "Video Deleted Successfully"));
+});
+
+//update video details
+const updateVideo = asyncHandler(async (req, res) => {
+  const { title, description } = req.body;
+  if (!title || !description) {
+    throw new ApiError(403, "title or description is required");
+  }
+  const { videoId } = req.params;
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(403, "Video Id is not valid");
+  }
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(403, "Video is not Found");
+  }
+  const thumbnail = req.files.thumbnail[0].path;
+  if (thumbnail) {
+    await uploadOnCloudinary(thumbnail);
+  }
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
@@ -251,4 +276,10 @@ const getVideoById = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, video[0], "Video get Sucessfully"));
 });
 
-export { toggleIsPublished, createVideo, getVideoById, deleteVideo };
+export {
+  updateVideo,
+  toggleIsPublished,
+  createVideo,
+  getVideoById,
+  deleteVideo,
+};

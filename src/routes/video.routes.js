@@ -7,6 +7,7 @@ import {
   deleteVideo,
   getVideoById,
   toggleIsPublished,
+  updateVideo,
 } from "../controllers/video.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 router.route("/").post(
@@ -22,6 +23,10 @@ router.route("/").post(
   ]),
   createVideo
 );
-router.route("/v/:videoId").get(getVideoById).delete(deleteVideo);
+router
+  .route("/v/:videoId")
+  .get(getVideoById)
+  .delete(deleteVideo)
+  .patch(upload.single({ name: "thumbnail", maxCount: 1 }), updateVideo);
 router.route("/toggle/publish/:videoId").patch(toggleIsPublished);
 export default router;
