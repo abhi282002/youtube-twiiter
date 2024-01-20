@@ -6,6 +6,77 @@ import { Video } from "../models/video.model.js";
 import mongoose, { isValidObjectId } from "mongoose";
 import { User } from "../models/user.model.js";
 import { Playlist } from "../models/playlist.model.js";
+import { getUserTweet } from "./tweet.controller.js";
+
+//get all videos
+
+const getAllVideos = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 10,
+    query = `/^video/`,
+    sortBy,
+    sortType,
+    userId = req.user._id,
+  } = req.query;
+
+  const pipeline = [];
+  //for using full text based search first create a search index in mongoCompass
+  //the field that you include in index then only those field should be search
+  //it helps in searching faster as is don't search in whole document
+  // if (query) {
+  //   pipeline.push({
+  //     $search: {
+  //       index: "search-videos",
+  //       text: {
+  //         query: query,
+  //         path: ["title", "description"],
+  //       },
+  //     },
+  //   });
+  // }
+
+  // if (userId) {
+  //   if (!isValidObjectId(userId)) {
+  //     throw new ApiError(403, "UserId is not valid");
+  //   }
+  pipeline.push({
+    $match: {
+      owner: new mongoose.Types.ObjectId(userId),
+      $or: [
+        { title: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
+      ],
+    },
+  });
+
+  //fetch all is Published Video
+  pipeline.push({
+    $match: {
+      isPublished: true,
+    },
+  });
+
+  if (sortBy && sortType) {
+    pipeline.push({
+      $sort: {
+        [sortBy]: sortType === "asc" ? 1 : -1,
+      },
+    });
+  } else {
+    pipeline.push({ $sort: { createdAt: -1 } });
+  }
+
+  const videoAggregrate = Video.aggregate(pipeline);
+  console.log(videoAggregrate);
+  const options = {
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10),
+  };
+
+  const video = await Video.aggregatePaginate(videoAggregrate, options);
+  res.status(200).json(new ApiResponse(200, video, "get all videos"));
+});
 
 //toggle published video
 const toggleIsPublished = asyncHandler(async (req, res) => {
@@ -120,10 +191,8 @@ const deleteVideo = asyncHandler(async (req, res) => {
 //update video details
 const updateVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
-  if (!title || !description) {
-    throw new ApiError(403, "title or description is required");
-  }
   const { videoId } = req.params;
+
   if (!isValidObjectId(videoId)) {
     throw new ApiError(403, "Video Id is not valid");
   }
@@ -131,10 +200,40 @@ const updateVideo = asyncHandler(async (req, res) => {
   if (!video) {
     throw new ApiError(403, "Video is not Found");
   }
-  const thumbnail = req.files.thumbnail[0].path;
+  const thumbnail = req.file.path;
+  let thumbnailUrl;
   if (thumbnail) {
-    await uploadOnCloudinary(thumbnail);
+    await deleteOnCloudinary(video.thumbnail.public_id);
+    thumbnailUrl = await uploadOnCloudinary(thumbnail);
+    await Video.findByIdAndUpdate(
+      video._id,
+      {
+        $set: {
+          title: title,
+          description: description,
+          thumbnail: {
+            url: thumbnailUrl.url,
+            public_id: thumbnailUrl.public_id,
+          },
+        },
+      },
+      { new: true }
+    );
+  } else {
+    await Video.findByIdAndUpdate(
+      video._id,
+      {
+        $set: {
+          title: title,
+          description: description,
+        },
+      },
+      { new: true }
+    );
   }
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Video Details updated Successfully"));
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
@@ -282,4 +381,5 @@ export {
   createVideo,
   getVideoById,
   deleteVideo,
+  getAllVideos,
 };
