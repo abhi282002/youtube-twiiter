@@ -21,25 +21,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
   } = req.query;
 
   const pipeline = [];
-  //for using full text based search first create a search index in mongoCompass
-  //the field that you include in index then only those field should be search
-  //it helps in searching faster as is don't search in whole document
-  // if (query) {
-  //   pipeline.push({
-  //     $search: {
-  //       index: "search-videos",
-  //       text: {
-  //         query: query,
-  //         path: ["title", "description"],
-  //       },
-  //     },
-  //   });
-  // }
-
-  // if (userId) {
-  //   if (!isValidObjectId(userId)) {
-  //     throw new ApiError(403, "UserId is not valid");
-  //   }
   pipeline.push({
     $match: {
       owner: new mongoose.Types.ObjectId(userId),
@@ -49,6 +30,10 @@ const getAllVideos = asyncHandler(async (req, res) => {
       ],
     },
   });
+  const execution = await Video.find({
+    description: { $regex: query, $options: "i" },
+  }).explain("executionStats");
+  console.log(execution);
 
   //fetch all is Published Video
   pipeline.push({
