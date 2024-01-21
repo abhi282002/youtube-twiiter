@@ -21,6 +21,16 @@ const getAllVideos = asyncHandler(async (req, res) => {
   } = req.query;
 
   const pipeline = [];
+  if (userId) {
+    if (!isValidObjectId(userId)) {
+      throw new ApiError(400, "Invalid UserId");
+    }
+    pipeline.push({
+      $match: {
+        owner: new mongoose.Types.ObjectId(userId),
+      },
+    });
+  }
   pipeline.push({
     $match: {
       $or: [
@@ -216,6 +226,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Video Details updated Successfully"));
 });
 
+//get Video By Id
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
@@ -272,7 +283,7 @@ const getVideoById = asyncHandler(async (req, res) => {
           {
             $project: {
               username: 1,
-              "avatar.url": 1,
+              avatar: 1,
               subscriberCount: 1,
               isSubscribed: 1,
             },
@@ -313,7 +324,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         owner: 1,
         likesCount: 1,
         isLiked: 1,
-        "avatar.url": 1,
+        avatar: 1,
         subscriberCount: 1,
         isSubscribed: 1,
       },
