@@ -22,7 +22,6 @@ const postTweet = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, tweet, "Tweet posted Successfully"));
 });
-
 //update Tweet
 const updateTweet = asyncHandler(async (req, res) => {
   const { content } = req.body;
@@ -98,11 +97,38 @@ const getUserTweet = asyncHandler(async (req, res) => {
         localField: "owner",
         foreignField: "_id",
         as: "owner",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              fullName: 1,
+              avatar: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "tweet",
+        as: "likes",
+        pipeline: [
+          {
+            $project: {
+              likedBy: 1,
+            },
+          },
+        ],
       },
     },
     {
       $addFields: {
-        owner: {
+        likesCount: {
+          $size: "$likes",
+        },
+        ownerDetails: {
           $first: "$owner",
         },
       },
@@ -111,11 +137,8 @@ const getUserTweet = asyncHandler(async (req, res) => {
       $project: {
         content: 1,
         createdAt: 1,
-        owner: {
-          username: 1,
-          fullName: 1,
-          "avatar.url": 1,
-        },
+        likesCount: 1,
+        ownerDetails: 1,
       },
     },
   ]);
