@@ -36,7 +36,6 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 });
 
 //get User Channel Subscribers
-
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   let { channelId } = req.params;
   if (!isValidObjectId(channelId)) {
@@ -93,7 +92,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
           _id: 1,
           username: 1,
           fullName: 1,
-          "avatar.url": 1,
+          avatar: 1,
           subscribedToSubscriber: 1,
           subscribesCount: 1,
         },
@@ -108,6 +107,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 //mene kitno ko subscribed kiya
 const getSubscribedChannels = asyncHandler(async (req, res) => {
   const { subscriberId } = req.params;
+
   const subscribedChannels = await Subscription.aggregate([
     {
       $match: {
@@ -119,10 +119,63 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
         from: "users",
         localField: "channel",
         foreignField: "_id",
-        as: "subscribedUser",
+        as: "subscribedChannel",
+      },
+    },
+    {
+      $unwind: "$subscribedChannel",
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "subscribedChannel._id",
+        foreignField: "owner",
+        as: "videos",
+      },
+    },
+    {
+      $addFields: {
+        latestVideo: {
+          $cond: {
+            if: {
+              $and: [
+                { $gt: [{ $size: "$videos" }, 0] }, // Check if videos array is not empty
+                { $eq: [{ $last: "$videos.isPublished" }, true] }, // Check if latest video is published
+              ],
+            },
+            then: { $last: "$videos" },
+            else: null,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        "subscribedChannel._id": 1,
+        "subscribedChannel.username": 1,
+        "subscribedChannel.fullName": 1,
+        "subscribedChannel.avatar": 1,
+        "subscribedChannel.latestVideo": {
+          $cond: {
+            if: { $eq: ["$latestVideo", null] },
+            then: null,
+            else: {
+              _id: "$latestVideo._id",
+              videoFileUrl: "$latestVideo.videoFile.url",
+              thumbnailUrl: "$latestVideo.thumbnail.url",
+              owner: "$latestVideo.owner",
+              title: "$latestVideo.title",
+              description: "$latestVideo.description",
+              duration: "$latestVideo.duration",
+              createdAt: "$latestVideo.createdAt",
+            },
+          },
+        },
       },
     },
   ]);
+
   return res
     .status(200)
     .json(
@@ -133,4 +186,5 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
       )
     );
 });
+
 export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels };
