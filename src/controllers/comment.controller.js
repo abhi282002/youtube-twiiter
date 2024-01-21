@@ -1,11 +1,12 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { Comment } from "../models/comment.model.js";
+
 import { Video } from "../models/video.model.js";
 import mongoose, { isValidObjectId } from "mongoose";
+import { Comment } from "../models/comment.model.js";
 
-//get Video By Comment
+//get all video Comment
 const getVideoComment = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const page = parseInt(req.query.page, 10) || 1;
@@ -33,9 +34,29 @@ const getVideoComment = asyncHandler(async (req, res) => {
       },
     },
     {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "comment",
+        as: "likes",
+      },
+    },
+    {
       $addFields: {
+        likesCount: {
+          $size: "$likes",
+        },
         owner: {
           $first: "$owner",
+        },
+        isLiked: {
+          $cond: {
+            if: {
+              $in: [req.user?._id, "$likes.likedBy"],
+            },
+            then: true,
+            else: false,
+          },
         },
       },
     },
@@ -43,11 +64,13 @@ const getVideoComment = asyncHandler(async (req, res) => {
       $project: {
         content: 1,
         createdAt: 1,
+        likesCount: 1,
         owner: {
           username: 1,
           avatar: 1,
           fullName: 1,
         },
+        isLiked: 1,
       },
     },
   ]);
@@ -64,6 +87,7 @@ const getVideoComment = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result, "Comment Fetch successfully"));
 });
 
+//update Video Comment
 const updateVideoComment = asyncHandler(async (req, res) => {
   const { updatedComment } = req.body;
   const { commentId } = req.params;
@@ -115,6 +139,7 @@ const deleteVideoComment = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Comment Deleted Successfully"));
 });
 
+//post comment
 const postComment = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { content } = req.body;

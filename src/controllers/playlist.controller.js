@@ -5,6 +5,7 @@ import { Playlist } from "../models/playlist.model.js";
 import mongoose, { isValidObjectId } from "mongoose";
 import { Video } from "../models/video.model.js";
 
+//create playlist
 const createPlaylist = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
   if (!name || !description) {
@@ -25,6 +26,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, playlist, "Playlist created"));
 });
 
+//update playlist
 const updatePlaylist = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
   const { playlistId } = req.params;
@@ -52,6 +54,16 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     }
   );
   res.status(200).json(new ApiResponse(200, {}, "Playlist Updated"));
+});
+
+//TODO:delete playlist
+const deletePlaylist = asyncHandler(async (req, res) => {
+  const { playlistId } = req.params;
+  if (!isValidObjectId(playlistId)) {
+    throw new ApiError(200, "Playlist Id is not valid");
+  }
+  const playlist = await Playlist.findByIdAndDelete(playlistId);
+  res.status(200).json(200, {}, "Playlist Deleted Successfully");
 });
 
 //add video into playlist
@@ -161,6 +173,11 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         localField: "videos",
         foreignField: "_id",
         as: "videos",
+      },
+    },
+    {
+      $match: {
+        "videos.isPublished": true,
       },
     },
     {
@@ -274,4 +291,5 @@ export {
   getUserPlaylists,
   removeVideoFromPlaylist,
   getPlayListById,
+  deletePlaylist,
 };

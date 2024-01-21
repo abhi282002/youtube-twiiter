@@ -17,23 +17,18 @@ const getAllVideos = asyncHandler(async (req, res) => {
     query = `/^video/`,
     sortBy,
     sortType,
-    userId = req.user._id,
+    userId,
   } = req.query;
 
   const pipeline = [];
   pipeline.push({
     $match: {
-      owner: new mongoose.Types.ObjectId(userId),
       $or: [
         { title: { $regex: query, $options: "i" } },
         { description: { $regex: query, $options: "i" } },
       ],
     },
   });
-  const execution = await Video.find({
-    description: { $regex: query, $options: "i" },
-  }).explain("executionStats");
-  console.log(execution);
 
   //fetch all is Published Video
   pipeline.push({
